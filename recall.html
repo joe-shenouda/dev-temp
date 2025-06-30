@@ -12,6 +12,10 @@
     .controls { margin-bottom: 1em; }
     .preset-btn { margin-right: 0.5em; }
     .summary { margin: 1em 0; background: #f9f9f9; padding: 1em; border: 1px solid #ddd; }
+    .pagination { margin: 1em 0; }
+    .spinner { display: inline-block; width: 32px; height: 32px; border: 4px solid #ccc; border-top: 4px solid #333; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .error { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -26,14 +30,18 @@
     <button class="preset-btn" onclick="applyPreset('2025')">📅 Year 2025</button>
     <button class="preset-btn" onclick="resetFilters()">Reset Filters</button>
     <button onclick="toggleSummary()">Toggle Summary</button>
+    <button onclick="refreshData()">Refresh Data</button>
   </div>
   <div id="summary" class="summary" style="display:none"></div>
-  <div id="table-container">Loading...</div>
+  <div id="table-container"><span class="spinner"></span> Loading data...</div>
+  <div id="pagination" class="pagination"></div>
   <script>
     const CSV_URL = 'https://raw.githubusercontent.com/joe-shenouda/dev-temp/refs/heads/main/Product%20Recall%20Dataset.csv';
-    let data = [], filtered = [];
-    let headers = [];
-    let summaryVisible = false;
+    const CACHE_KEY = 'recall_csv_cache_v1';
+    const CACHE_TIME_KEY = 'recall_csv_cache_time_v1';
+    const CACHE_MAX_AGE = 1000 * 60 * 60 * 24; // 24 hours
+    const PAGE_SIZE = 20;
+    let data = [], filtered = [], headers = [], page = 1, summaryVisible = false;
 
     // Simple CSV parser (handles quoted fields, newlines in quotes)
     function parseCSV(text) {
@@ -94,7 +102,8 @@
         if (date) match = match && row.RecallDate && row.RecallDate.startsWith(date);
         return match;
       });
-      document.getElementById('table-container').innerHTML = renderTable(filtered);
+      page = 1;
+      renderPage();
       if (summaryVisible) showSummary();
     }
 
@@ -102,6 +111,9 @@
       const hazardSel = document.getElementById('hazardFilter');
       const manufacturerSel = document.getElementById('manufacturerFilter');
       const dateSel = document.getElementById('dateFilter');
+      hazardSel.innerHTML = '<option value="">All Hazards</option>';
+      manufacturerSel.innerHTML = '<option value="">All Manufacturers</option>';
+      dateSel.innerHTML = '<option value="">All Recall Dates</option>';
       unique(data.map(r => r.Hazard)).forEach(v => { if(v) hazardSel.innerHTML += `<option>${v}</option>`; });
       unique(data.map(r => r.Manufacturer)).forEach(v => { if(v) manufacturerSel.innerHTML += `<option>${v}</option>`; });
       unique(data.map(r => (r.RecallDate||'').slice(0,10))).forEach(v => { if(v) dateSel.innerHTML += `<option>${v}</option>`; });
@@ -139,10 +151,91 @@
       if (summaryVisible) showSummary();
     }
 
-    // Main
-    fetch(CSV_URL)
-      .then(r => r.text())
-      .then(txt => {
+    function renderPage() {
+      const start = (page-1)*PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      const pageRows = filtered.slice(start, end);
+      document.getElementById('table-container').innerHTML = renderTable(pageRows);
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+      let html = '';
+      if (totalPages > 1) {
+        html += `<button onclick="gotoPage(1)" ${page===1?'disabled':''}>First</button> `;
+        html += `<button onclick="gotoPage(${page-1})" ${page===1?'disabled':''}>Prev</button> `;
+        html += ` Page ${page} of ${totalPages} `;
+        html += `<button onclick="gotoPage(${page+1})" ${page===totalPages?'disabled':''}>Next</button> `;
+        html += `<button onclick="gotoPage(${totalPages})" ${page===totalPages?'disabled':''}>Last</button>`;
+      }
+      document.getElementById('pagination').innerHTML = html;
+    }
+
+    function gotoPage(p) {
+      const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+      if (p < 1) p = 1;
+      if (p > totalPages) p = totalPages;
+      page = p;
+      renderPage();
+    }
+
+    function showError(msg) {
+      document.getElementById('table-container').innerHTML = `<span class="error">${msg}</span> <button onclick="refreshData()">Retry</button>`;
+      document.getElementById('pagination').innerHTML = '';
+    }
+
+    function saveCache(txt) {
+      try {
+        localStorage.setItem(CACHE_KEY, txt);
+        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+      } catch(e) {}
+    }
+    function loadCache() {
+      try {
+        const txt = localStorage.getItem(CACHE_KEY);
+        const t = parseInt(localStorage.getItem(CACHE_TIME_KEY)||'0',10);
+        if (txt && (Date.now()-t < CACHE_MAX_AGE)) return txt;
+      } catch(e) {}
+      return null;
+    }
+    function clearCache() {
+      try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIME_KEY);
+      } catch(e) {}
+    }
+
+    function refreshData() {
+      clearCache();
+      loadData();
+    }
+
+    function loadData() {
+      document.getElementById('table-container').innerHTML = '<span class="spinner"></span> Loading data...';
+      document.getElementById('pagination').innerHTML = '';
+      let txt = loadCache();
+      if (txt) {
+        setTimeout(()=>processCSV(txt), 10);
+        return;
+      }
+      fetch(CSV_URL)
+        .then(r => {
+          if (!r.ok) throw new Error('Network error');
+          return r.text();
+        })
+        .then(txt => {
+          saveCache(txt);
+          processCSV(txt);
+        })
+        .catch(e => {
+          showError('Error loading data.');
+          console.error(e);
+        });
+    }
+
+    function processCSV(txt) {
+      try {
         const rows = parseCSV(txt);
         headers = rows[0];
         data = rows.slice(1).map(r => {
@@ -156,11 +249,14 @@
         document.getElementById('hazardFilter').addEventListener('change', filterData);
         document.getElementById('manufacturerFilter').addEventListener('change', filterData);
         document.getElementById('dateFilter').addEventListener('change', filterData);
-      })
-      .catch(e => {
-        document.getElementById('table-container').innerHTML = '<b>Error loading data.</b>';
+      } catch(e) {
+        showError('Error parsing data.');
         console.error(e);
-      });
+      }
+    }
+
+    // Initial load
+    loadData();
   </script>
 </body>
 </html>
