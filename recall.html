@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Recall Dataset Browser</title>
+  <style>
+    body { font-family: sans-serif; margin: 1em; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.5em; }
+    th { background: #eee; }
+    input, select { margin: 0.2em; }
+    .controls { margin-bottom: 1em; }
+    .preset-btn { margin-right: 0.5em; }
+    .summary { margin: 1em 0; background: #f9f9f9; padding: 1em; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Product Recall Dataset Browser</h1>
+  <div class="controls">
+    <input id="search" type="text" placeholder="Search any column..." size="30">
+    <select id="hazardFilter"><option value="">All Hazards</option></select>
+    <select id="manufacturerFilter"><option value="">All Manufacturers</option></select>
+    <select id="dateFilter"><option value="">All Recall Dates</option></select>
+    <button class="preset-btn" onclick="applyPreset('fire')">🔥 Fire Hazards</button>
+    <button class="preset-btn" onclick="applyPreset('fall')">🪂 Fall Hazards</button>
+    <button class="preset-btn" onclick="applyPreset('2025')">📅 Year 2025</button>
+    <button class="preset-btn" onclick="resetFilters()">Reset Filters</button>
+    <button onclick="toggleSummary()">Toggle Summary</button>
+  </div>
+  <div id="summary" class="summary" style="display:none"></div>
+  <div id="table-container">Loading...</div>
+  <script>
+    const CSV_URL = 'https://raw.githubusercontent.com/joe-shenouda/dev-temp/refs/heads/main/Product%20Recall%20Dataset.csv';
+    let data = [], filtered = [];
+    let headers = [];
+    let summaryVisible = false;
+
+    // Simple CSV parser (handles quoted fields, newlines in quotes)
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], col = '', inQuotes = false, i = 0;
+      while (i < text.length) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (text[i+1] === '"') { col += '"'; i++; }
+            else inQuotes = false;
+          } else col += c;
+        } else {
+          if (c === '"') inQuotes = true;
+          else if (c === ',') { row.push(col); col = ''; }
+          else if (c === '\r' && text[i+1] === '\n') { row.push(col); rows.push(row); row = []; col = ''; i++; }
+          else if (c === '\n' || c === '\r') { row.push(col); rows.push(row); row = []; col = ''; }
+          else col += c;
+        }
+        i++;
+      }
+      if (col || row.length) { row.push(col); rows.push(row); }
+      return rows.filter(r => r.length > 1);
+    }
+
+    function unique(arr) {
+      return Array.from(new Set(arr)).sort();
+    }
+
+    function renderTable(rows) {
+      if (!rows.length) return '<p>No results.</p>';
+      let html = '<table><thead><tr>';
+      headers.forEach(h => html += `<th>${h}</th>`);
+      html += '</tr></thead><tbody>';
+      rows.forEach(r => {
+        html += '<tr>';
+        headers.forEach((h, i) => {
+          let cell = r[h] || '';
+          if (h.toLowerCase() === 'url' && cell) cell = `<a href="${cell}" target="_blank">Link</a>`;
+          html += `<td>${cell}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function filterData() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const hazard = document.getElementById('hazardFilter').value;
+      const manufacturer = document.getElementById('manufacturerFilter').value;
+      const date = document.getElementById('dateFilter').value;
+      filtered = data.filter(row => {
+        let match = true;
+        if (search) match = headers.some(h => (row[h]||'').toLowerCase().includes(search));
+        if (hazard) match = match && row.Hazard === hazard;
+        if (manufacturer) match = match && row.Manufacturer === manufacturer;
+        if (date) match = match && row.RecallDate && row.RecallDate.startsWith(date);
+        return match;
+      });
+      document.getElementById('table-container').innerHTML = renderTable(filtered);
+      if (summaryVisible) showSummary();
+    }
+
+    function fillFilters() {
+      const hazardSel = document.getElementById('hazardFilter');
+      const manufacturerSel = document.getElementById('manufacturerFilter');
+      const dateSel = document.getElementById('dateFilter');
+      unique(data.map(r => r.Hazard)).forEach(v => { if(v) hazardSel.innerHTML += `<option>${v}</option>`; });
+      unique(data.map(r => r.Manufacturer)).forEach(v => { if(v) manufacturerSel.innerHTML += `<option>${v}</option>`; });
+      unique(data.map(r => (r.RecallDate||'').slice(0,10))).forEach(v => { if(v) dateSel.innerHTML += `<option>${v}</option>`; });
+    }
+
+    function applyPreset(type) {
+      resetFilters(false);
+      if (type === 'fire') document.getElementById('hazardFilter').value = unique(data.map(r=>r.Hazard)).find(h=>/fire/i.test(h)) || '';
+      if (type === 'fall') document.getElementById('hazardFilter').value = unique(data.map(r=>r.Hazard)).find(h=>/fall/i.test(h)) || '';
+      if (type === '2025') document.getElementById('dateFilter').value = '2025-';
+      filterData();
+    }
+
+    function resetFilters(trigger=true) {
+      document.getElementById('search').value = '';
+      document.getElementById('hazardFilter').value = '';
+      document.getElementById('manufacturerFilter').value = '';
+      document.getElementById('dateFilter').value = '';
+      if (trigger) filterData();
+    }
+
+    function showSummary() {
+      const total = filtered.length;
+      const byHazard = {};
+      filtered.forEach(r => { byHazard[r.Hazard] = (byHazard[r.Hazard]||0)+1; });
+      let html = `<b>Total Recalls:</b> ${total}<br><b>By Hazard:</b><ul>`;
+      Object.entries(byHazard).forEach(([h, n]) => html += `<li>${h}: ${n}</li>`);
+      html += '</ul>';
+      document.getElementById('summary').innerHTML = html;
+    }
+
+    function toggleSummary() {
+      summaryVisible = !summaryVisible;
+      document.getElementById('summary').style.display = summaryVisible ? '' : 'none';
+      if (summaryVisible) showSummary();
+    }
+
+    // Main
+    fetch(CSV_URL)
+      .then(r => r.text())
+      .then(txt => {
+        const rows = parseCSV(txt);
+        headers = rows[0];
+        data = rows.slice(1).map(r => {
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = r[i]);
+          return obj;
+        });
+        fillFilters();
+        filterData();
+        document.getElementById('search').addEventListener('input', filterData);
+        document.getElementById('hazardFilter').addEventListener('change', filterData);
+        document.getElementById('manufacturerFilter').addEventListener('change', filterData);
+        document.getElementById('dateFilter').addEventListener('change', filterData);
+      })
+      .catch(e => {
+        document.getElementById('table-container').innerHTML = '<b>Error loading data.</b>';
+        console.error(e);
+      });
+  </script>
+</body>
+</html>
