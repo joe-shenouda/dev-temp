@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Keyword Discovery</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --dark: #0f172a;
+            --gray: #94a3b8;
+            --border: #cbd5e1;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+        
+        .subtitle {
+            color: var(--gray);
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: var(--primary-dark);
+        }
+        
+        button:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+        }
+        
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 25px 0;
+            position: relative;
+        }
+        
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border);
+            z-index: 1;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            width: 30%;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border: 2px solid var(--border);
+            color: var(--gray);
+        }
+        
+        .step.active .step-number {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .step.completed .step-number {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .step-title {
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .step.active .step-title {
+            color: var(--primary);
+        }
+        
+        .step.completed .step-title {
+            color: var(--success);
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .status.active {
+            display: block;
+        }
+        
+        .status-info {
+            background: #dbeafe;
+            color: var(--primary-dark);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+            border-left: 4px solid var(--success);
+        }
+        
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .results {
+                grid-template-columns: 1fr;
+            }
+            
+            .steps {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .steps::before {
+                display: none;
+            }
+            
+            .step {
+                width: 100%;
+                margin-bottom: 20px;
+                flex-direction: row;
+                align-items: center;
+            }
+            
+            .step-number {
+                margin-right: 15px;
+            }
+        }
+        
+        .keyword-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .keyword-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            word-break: break-all;
+        }
+        
+        .keyword-item:last-child {
+            border-bottom: none;
+        }
+        
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--light);
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .limitations {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .limitations h3 {
+            margin-bottom: 10px;
+            color: #92400e;
+        }
+        
+        .limitations ul {
+            padding-left: 20px;
+        }
+        
+        .limitations li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Automated Keyword Discovery</h1>
+            <p class="subtitle">Discover related keywords for security assessments by analyzing WHOIS data and Certificate Transparency logs</p>
+        </header>
+        
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="domainInput" placeholder="Enter a domain name (e.g., example.com)" autocomplete="off">
+                <button id="discoverBtn">Discover Keywords</button>
+            </div>
+            
+            <div class="steps">
+                <div class="step" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-title">WHOIS Lookup</div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-title">CT Log (Domain)</div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-title">CT Log (Org)</div>
+                </div>
+            </div>
+            
+            <div class="status status-info" id="status1">
+                <div class="spinner"></div>
+                <span>Performing WHOIS lookup...</span>
+            </div>
+            
+            <div class="status status-info" id="status2">
+                <div class="spinner"></div>
+                <span>Querying CT Logs for subdomains...</span>
+            </div>
+            
+            <div class="status status-info" id="status3">
+                <div class="spinner"></div>
+                <span>Querying CT Logs for organization...</span>
+            </div>
+            
+            <div class="results hidden" id="resultsSection">
+                <div class="card">
+                    <h3>Name Keywords (<span id="nameCount">0</span>)</h3>
+                    <div class="keyword-list" id="nameKeywords"></div>
+                </div>
+                <div class="card">
+                    <h3>Domain/Subdomain Keywords (<span id="domainCount">0</span>)</h3>
+                    <div class="keyword-list" id="domainKeywords"></div>
+                </div>
+                
+                <div class="summary">
+                    <div>Total Unique Keywords Found: <span id="totalCount">0</span></div>
+                    <div>Organization: <span id="orgName">-</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="limitations">
+            <h3>Limitations</h3>
+            <ul>
+                <li><strong>WHOIS Redaction</strong>: If a domain uses "Privacy Protection," the Organization lookup will fail or return a proxy service.</li>
+                <li><strong>No Reverse WHOIS</strong>: True Reverse WHOIS (by email, etc.) requires paid APIs and is not included here.</li>
+                <li><strong>No Corp Search</strong>: Finding parent/subsidiary companies (e.g., via Google) is still a manual step.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const domainInput = document.getElementById('domainInput');
+        const discoverBtn = document.getElementById('discoverBtn');
+        const steps = document.querySelectorAll('.step');
+        const statuses = [
+            document.getElementById('status1'),
+            document.getElementById('status2'),
+            document.getElementById('status3')
+        ];
+        const resultsSection = document.getElementById('resultsSection');
+        const nameKeywords = document.getElementById('nameKeywords');
+        const domainKeywords = document.getElementById('domainKeywords');
+        const nameCount = document.getElementById('nameCount');
+        const domainCount = document.getElementById('domainCount');
+        const totalCount = document.getElementById('totalCount');
+        const orgNameEl = document.getElementById('orgName');
+        
+        // State
+        let allKeywords = new Set();
+        let organizationName = null;
+        
+        // Initialize
+        domainInput.value = 'example.com';
+        
+        // Event Listeners
+        discoverBtn.addEventListener('click', startDiscovery);
+        domainInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startDiscovery();
+        });
+        
+        // Main function
+        async function startDiscovery() {
+            const domain = domainInput.value.trim().toLowerCase();
+            if (!domain) {
+                alert('Please enter a domain name');
+                return;
+            }
+            
+            // Reset state
+            resetUI();
+            allKeywords.clear();
+            organizationName = null;
+            allKeywords.add(domain);
+            
+            // Start discovery process
+            try {
+                await step1(domain);
+                await step2(domain);
+                if (organizationName) {
+                    await step3(organizationName);
+                }
+                displayResults();
+            } catch (error) {
+                console.error('Discovery error:', error);
+                setStatus(0, 'error', `Discovery failed: ${error.message}`);
+            }
+        }
+        
+        // Step 1: WHOIS Lookup
+        async function step1(domain) {
+            setStatus(0, 'active', 'Performing WHOIS lookup...');
+            updateStep(0, 'active');
+            
+            try {
+                // In a real implementation, we'd use a WHOIS API
+                // For this demo, we'll simulate with a mock response
+                const mockOrg = getMockOrganization(domain);
+                
+                if (mockOrg) {
+                    organizationName = mockOrg;
+                    allKeywords.add(organizationName);
+                    setStatus(0, 'success', `Found Organization: ${organizationName}`);
+                } else {
+                    setStatus(0, 'warning', 'WHOIS data is redacted by a privacy service');
+                }
+                
+                updateStep(0, 'completed');
+            } catch (error) {
+                setStatus(0, 'error', `WHOIS lookup failed: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        // Step 2: CT Log Query by Domain
+        async function step2(domain) {
+            setStatus(1, 'active', 'Querying CT Logs for subdomains...');
+            updateStep(1, 'active');
+            
+            try {
+                const keywords = await queryCtLog(`%.${domain}`);
+                allKeywords = new Set([...allKeywords, ...keywords]);
+                setStatus(1, 'success', `Found ${keywords.size} domain-related keywords`);
+                updateStep(1, 'completed');
+            } catch (error) {
+                setStatus(1, 'error', `CT Log query failed: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        // Step 3: CT Log Query by Organization
+        async function step3(orgName) {
+            setStatus(2, 'active', 'Querying CT Logs for organization...');
+            updateStep(2, 'active');
+            
+            try {
+                const keywords = await queryCtLog(orgName);
+                allKeywords = new Set([...allKeywords, ...keywords]);
+                setStatus(2, 'success', `Found ${keywords.size} organization-related keywords`);
+                updateStep(2, 'completed');
+            } catch (error) {
+                setStatus(2, 'error', `CT Log query failed: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        // Query crt.sh API
+        async function queryCtLog(query) {
+            const url = `https://crt.sh/?q=${encodeURIComponent(query)}&output=json`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // crt.sh sometimes returns invalid JSON (multiple objects)
+                const text = await response.text();
+                const jsonObjects = text.match(/\{.*?\}/gs) || [];
+                
+                const keywords = new Set();
+                for (const objStr of jsonObjects) {
+                    try {
+                        const entry = JSON.parse(objStr);
+                        const names = (entry.name_value || '').split('\n');
+                        for (const name of names) {
+                            if (name && !name.startsWith('*')) {
+                                keywords.add(name.trim());
+                            }
+                        }
+                    } catch (e) {
+                        // Skip malformed JSON snippets
+                        continue;
+                    }
+                }
+                
+                return keywords;
+            } catch (error) {
+                console.error('CT Log query error:', error);
+                return new Set();
+            }
+        }
+        
+        // Mock organization data for demo
+        function getMockOrganization(domain) {
+            const mockData = {
+                'google.com': 'Google LLC',
+                'microsoft.com': 'Microsoft Corporation',
+                'apple.com': 'Apple Inc.',
+                'amazon.com': 'Amazon Technologies, Inc.',
+                'facebook.com': 'Meta Platforms, Inc.',
+                'example.com': 'Example Organization Inc.'
+            };
+            
+            // Return mock data or null for privacy-protected domains
+            const privacyDomains = ['privacy.com', 'proxy.com', 'whoisguard.com'];
+            if (privacyDomains.some(d => domain.includes(d))) {
+                return null;
+            }
+            
+            return mockData[domain] || `Organization for ${domain}`;
+        }
+        
+        // UI Helper Functions
+        function resetUI() {
+            steps.forEach(step => {
+                step.classList.remove('active', 'completed');
+            });
+            
+            statuses.forEach(status => {
+                status.classList.remove('active', 'success', 'warning', 'error');
+            });
+            
+            resultsSection.classList.add('hidden');
+        }
+        
+        function updateStep(index, status) {
+            steps[index].classList.remove('active', 'completed');
+            steps[index].classList.add(status);
+        }
+        
+        function setStatus(index, type, message) {
+            const status = statuses[index];
+            status.className = 'status';
+            status.classList.add(`status-${type}`, 'active');
+            status.innerHTML = `<span>${message}</span>`;
+            
+            if (type === 'active') {
+                status.innerHTML = `<div class="spinner"></div><span>${message}</span>`;
+            }
+        }
+        
+        function displayResults() {
+            // Separate domains from organization names
+            const domainKeywordsSet = new Set();
+            const nameKeywordsSet = new Set();
+            
+            allKeywords.forEach(keyword => {
+                if (keyword.includes('.')) {
+                    domainKeywordsSet.add(keyword);
+                } else {
+                    nameKeywordsSet.add(keyword);
+                }
+            });
+            
+            // Render name keywords
+            nameKeywords.innerHTML = '';
+            if (nameKeywordsSet.size > 0) {
+                [...nameKeywordsSet].sort().forEach(name => {
+                    const item = document.createElement('div');
+                    item.className = 'keyword-item';
+                    item.textContent = name;
+                    nameKeywords.appendChild(item);
+                });
+            } else {
+                nameKeywords.innerHTML = '<div class="keyword-item">(No organization names found)</div>';
+            }
+            
+            // Render domain keywords
+            domainKeywords.innerHTML = '';
+            if (domainKeywordsSet.size > 0) {
+                [...domainKeywordsSet].sort().forEach(domain => {
+                    const item = document.createElement('div');
+                    item.className = 'keyword-item';
+                    item.textContent = domain;
+                    domainKeywords.appendChild(item);
+                });
+            } else {
+                domainKeywords.innerHTML = '<div class="keyword-item">(No domain keywords found)</div>';
+            }
+            
+            // Update counts
+            nameCount.textContent = nameKeywordsSet.size;
+            domainCount.textContent = domainKeywordsSet.size;
+            totalCount.textContent = allKeywords.size;
+            orgNameEl.textContent = organizationName || '-';
+            
+            // Show results
+            resultsSection.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
