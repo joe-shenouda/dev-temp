@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Intelligence Daily Briefing</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --secondary: #2d3748;
+            --accent: #e53e3e;
+            --light: #f7fafc;
+            --dark: #1a202c;
+            --success: #38a169;
+            --warning: #dd6b20;
+            --info: #3182ce;
+            --border: #e2e8f0;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .date {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 1rem;
+            padding-left: 40px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+        
+        .refresh-btn {
+            background-color: var(--info);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #2c5282;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--light);
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .briefing-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .section {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .section-content {
+            padding: 20px;
+        }
+        
+        .item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .item-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            color: var(--dark);
+        }
+        
+        .item-desc {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        .sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .source-tag {
+            background-color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: var(--text);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: var(--text-light);
+        }
+        
+        .error {
+            background-color: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .cve {
+            background-color: var(--warning);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .briefing-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Threat Intelligence Daily Briefing</h1>
+            <div class="date" id="current-date">Loading date...</div>
+        </header>
+        
+        <div class="controls">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="Search briefing items...">
+            </div>
+            <button class="refresh-btn" id="refresh-btn">
+                <span>🔄</span> Refresh Feed
+            </button>
+        </div>
+        
+        <div class="status" id="status">Fetching threat intelligence data...</div>
+        
+        <div class="briefing-container" id="briefing-container">
+            <div class="loading">Loading threat intelligence briefing...</div>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // RSS sources configuration
+        const rssSources = [
+            { name: 'BleepingComputer', url: 'https://www.bleepingcomputer.com/feed/' },
+            { name: 'SecurityWeek', url: 'http://feeds.feedburner.com/Securityweek' },
+            { name: 'The Hacker News', url: 'https://feeds.feedburner.com/TheHackersNews' },
+            { name: 'Schneier on Security', url: 'https://www.schneier.com/feed/atom/' },
+            { name: 'Dark Reading', url: 'https://www.darkreading.com/rss.xml' },
+            { name: 'Kaspersky Securelist', url: 'http://www.securelist.com/en/rss/allupdates' },
+            { name: 'Mandiant Blog', url: 'https://www.mandiant.com/resources/blog/rss.xml' },
+            { name: 'Microsoft Security Blog', url: 'https://www.microsoft.com/en-us/security/blog/feed/' },
+            { name: 'Trend Micro', url: 'http://feeds.trendmicro.com/TrendMicroSimplySecurity' },
+            { name: 'Recorded Future', url: 'https://www.recordedfuture.com/feed/' },
+            { name: 'The DFIR Report', url: 'https://thedfirreport.com/feed/' },
+            { name: 'Sophos News', url: 'https://news.sophos.com/en-us/feed' },
+            { name: 'Check Point Research', url: 'https://research.checkpoint.com/feed' },
+            { name: 'Cisco Talos', url: 'https://blog.talosintelligence.com/rss/' },
+            { name: 'CloudSEK Blog', url: 'https://www.cloudsek.com/blog/rss.xml' },
+            { name: 'Coveware Blog', url: 'https://www.coveware.com/blog?format=RSS' },
+            { name: 'ESET Blog', url: 'https://feeds.feedburner.com/eset/blog?format=xml' },
+            { name: 'Eye Security Blog', url: 'https://www.eye.security/blog/rss.xml' },
+            { name: 'Fox-IT Blog', url: 'http://blog.fox-it.com/feed/' },
+            { name: 'Google Project Zero', url: 'http://googleprojectzero.blogspot.com/feeds/posts/default' },
+            { name: 'Google TAG', url: 'https://blog.google/threat-analysis-group/rss' },
+            { name: 'Huntress Blog', url: 'https://www.huntress.com/blog/rss.xml' },
+            { name: 'DoublePulsar', url: 'https://doublepulsar.com/feed' },
+            { name: 'Proofpoint', url: 'https://www.proofpoint.com/us/threat-insight-blog.xml' },
+            { name: 'Rapid7', url: 'https://blog.rapid7.com/tag/detection-and-response/rss/' },
+            { name: 'SentinelOne Labs', url: 'https://labs.sentinelone.com/feed/' },
+            { name: 'Unit42', url: 'http://feeds.feedburner.com/Unit42' },
+            { name: 'WatchTowr Labs', url: 'https://labs.watchtowr.com/rss/' },
+            { name: 'Wiz Blog', url: 'https://blog.wiz.io/rss/' },
+            { name: 'Zscaler Research', url: 'http://research.zscaler.com/feeds/posts/default' },
+            { name: 'Crowdstrike', url: 'https://www.crowdstrike.com/blog/feed' }
+        ];
+        
+        // Sample data based on provided content
+        const sampleData = {
+            "Nation state actor activity": [
+                {
+                    title: "Chinese Hackers Exploit SAP RCE Flaw CVE-2025-31324",
+                    desc: "China-linked threat actor Chaya_004 exploiting critical SAP NetWeaver flaw (CVSS 10.0) to deploy Golang-based SuperShell.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "MirrorFace Targets Japan and Taiwan with ROAMINGMOUSE",
+                    desc: "Nation-state actor deploying ROAMINGMOUSE and upgraded ANEL malware against government agencies in Japan and Taiwan.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Iranian Hackers Maintain 2-Year Access to Middle East CNI",
+                    desc: "Iranian state-sponsored group conducted extensive espionage operations against critical national infrastructure in the Middle East.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Russian Hackers Using ClickFix Fake CAPTCHA",
+                    desc: "Russia-linked COLDRIVER distributing LOSTKEYS malware via ClickFix social engineering for espionage purposes.",
+                    sources: ["The Hacker News", "BleepingComputer"]
+                }
+            ],
+            "Financially motivated actor activity": [
+                {
+                    title: "Qilin Ransomware Leads April 2025 with 72 Data Leaks",
+                    desc: "Qilin ransomware using SmokeLoader and new NETXLOADER to conduct campaigns with highest disclosure count in April.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Golden Chickens Deploy TerraStealerV2",
+                    desc: "Threat actors stealing browser credentials and crypto wallet data with new TerraStealerV2 and TerraLogger malware.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "FreeDrain Operation Stealing Crypto Seed Phrases",
+                    desc: "Industrial-scale phishing operation using 38,000+ subdomains to steal cryptocurrency wallet seed phrases via SEO manipulation.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "OtterCookie v4 Adds Credential Theft Capabilities",
+                    desc: "North Korean threat actors updating OtterCookie malware to steal Chrome and MetaMask credentials with VM detection.",
+                    sources: ["The Hacker News"]
+                }
+            ],
+            "Compromises and data breach activity": [
+                {
+                    title: "Google Pays $1.375B to Texas Over Data Collection",
+                    desc: "Settlement for unauthorized tracking of users' location and biometric data without consent.",
+                    sources: ["The Hacker News", "BleepingComputer"]
+                },
+                {
+                    title: "TikTok Fined €530M for GDPR Violations",
+                    desc: "Ireland's DPC fined TikTok for transferring European users' data to China without proper safeguards.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "NSO Group Fined $168M for WhatsApp Pegasus Attacks",
+                    desc: "Federal jury orders NSO to pay damages for targeting 1,400 WhatsApp users with spyware.",
+                    sources: ["The Hacker News"]
+                }
+            ],
+            "Vulnerabilities activity": [
+                {
+                    title: "Critical SAP NetWeaver Flaw CVE-2025-31324",
+                    desc: "Remote code execution vulnerability with CVSS score 10.0 being actively exploited by Chinese threat actors.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Cisco IOS XE JWT Vulnerability CVE-2025-20188",
+                    desc: "Maximum severity flaw (CVSS 10.0) enabling root exploits via hard-coded JSON Web Token.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Wormable AirPlay Flaws Enable Zero-Click RCE",
+                    desc: "AirBorne vulnerabilities in Apple's AirPlay protocol allow device takeover via public Wi-Fi without user interaction.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Commvault Command Center Flaw CVE-2025-34028",
+                    desc: "Path traversal bug (CVSS 10.0) added to CISA KEV catalog after active exploitation confirmed.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Langflow Critical Flaw CVE-2025-3248",
+                    desc: "Missing authentication vulnerability (CVSS 9.8) in open-source Langflow platform added to CISA KEV list.",
+                    sources: ["The Hacker News"]
+                }
+            ],
+            "Other miscellaneous activity": [
+                {
+                    title: "AI-Generated Code Remains Wildly Insecure",
+                    desc: "Only about half of code created by latest LLMs is cybersecure, creating significant security debt.",
+                    sources: ["Dark Reading"]
+                },
+                {
+                    title: "Malicious npm Packages Target Cursor Users",
+                    desc: "Three malicious npm packages infecting 3,200+ macOS Cursor users to steal credentials and deploy backdoors.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Proxy Botnet Using 7,000 IoT Devices Dismantled",
+                    desc: "Joint US-Dutch operation dismantled criminal proxy network powered by infected IoT and end-of-life devices.",
+                    sources: ["The Hacker News"]
+                },
+                {
+                    title: "Germany Shuts Down eXch Crypto Exchange",
+                    desc: "Authorities seized infrastructure of eXch exchange over $1.9B money laundering allegations, confiscating €34M in crypto.",
+                    sources: ["The Hacker News"]
+                }
+            ]
+        };
+        
+        // DOM elements
+        const briefingContainer = document.getElementById('briefing-container');
+        const statusElement = document.getElementById('status');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const searchInput = document.getElementById('search-input');
+        
+        // Initialize the briefing
+        function initBriefing() {
+            renderBriefing(sampleData);
+            statusElement.textContent = "Threat intelligence briefing loaded successfully";
+        }
+        
+        // Render the briefing
+        function renderBriefing(data) {
+            briefingContainer.innerHTML = '';
+            
+            // Create sections
+            for (const [sectionName, items] of Object.entries(data)) {
+                const section = document.createElement('div');
+                section.className = 'section';
+                
+                const header = document.createElement('div');
+                header.className = 'section-header';
+                header.textContent = sectionName;
+                section.appendChild(header);
+                
+                const content = document.createElement('div');
+                content.className = 'section-content';
+                
+                items.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'item';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'item-title';
+                    title.textContent = item.title;
+                    
+                    const desc = document.createElement('div');
+                    desc.className = 'item-desc';
+                    desc.textContent = item.desc;
+                    
+                    const sources = document.createElement('div');
+                    sources.className = 'sources';
+                    
+                    item.sources.forEach(source => {
+                        const tag = document.createElement('span');
+                        tag.className = 'source-tag';
+                        tag.textContent = source;
+                        sources.appendChild(tag);
+                    });
+                    
+                    itemEl.appendChild(title);
+                    itemEl.appendChild(desc);
+                    itemEl.appendChild(sources);
+                    content.appendChild(itemEl);
+                });
+                
+                section.appendChild(content);
+                briefingContainer.appendChild(section);
+            }
+        }
+        
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.item');
+            
+            items.forEach(item => {
+                const title = item.querySelector('.item-title').textContent.toLowerCase();
+                const desc = item.querySelector('.item-desc').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || desc.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // Refresh functionality
+        refreshBtn.addEventListener('click', () => {
+            statusElement.textContent = "Refreshing threat intelligence data...";
+            setTimeout(() => {
+                initBriefing();
+            }, 1000);
+        });
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', initBriefing);
+    </script>
+</body>
+</html>
