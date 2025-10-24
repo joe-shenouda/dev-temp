@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Intelligence Daily Briefing</title>
+    <style>
+        :root {
+            --bg-primary: #0f1419;
+            --bg-secondary: #192028;
+            --bg-tertiary: #1e2832;
+            --text-primary: #e6e6e6;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #1da1f2;
+            --accent-red: #e0245e;
+            --accent-green: #17bf63;
+            --accent-yellow: #ffad1f;
+            --border-color: #38444d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .date-time {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .refresh-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background-color: #1a91da;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--accent-blue);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .section {
+            margin-bottom: 40px;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .section-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        .item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .item-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .item-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .item-sources {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .item-sources a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        .item-sources a:hover {
+            text-decoration: underline;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .error {
+            color: var(--accent-red);
+        }
+
+        .success {
+            color: var(--accent-green);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--bg-tertiary);
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--accent-blue);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .source-status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .source-item {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .source-loading {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .source-success {
+            background-color: rgba(23, 191, 99, 0.2);
+            color: var(--accent-green);
+        }
+
+        .source-error {
+            background-color: rgba(224, 36, 94, 0.2);
+            color: var(--accent-red);
+        }
+
+        .source-status-icon {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Threat Intelligence Daily Briefing</h1>
+            <div>
+                <span class="date-time" id="date-time"></span>
+                <button class="refresh-btn" id="refresh-btn">Refresh</button>
+            </div>
+        </header>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Fetching threat intelligence from multiple sources...</p>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="source-status" id="source-status"></div>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Sections will be populated dynamically -->
+        </div>
+
+        <div id="status-message" class="status-message" style="display: none;"></div>
+
+        <footer class="footer">
+            <p>Threat Intelligence Daily Briefing | Updated hourly | Data from 30+ security sources</p>
+        </footer>
+    </div>
+
+    <script>
+        // RSS sources configuration
+        const rssSources = [
+            { name: 'BleepingComputer', url: 'https://www.bleepingcomputer.com/feed/' },
+            { name: 'SecurityWeek', url: 'http://feeds.feedburner.com/Securityweek' },
+            { name: 'The Hacker News', url: 'https://feeds.feedburner.com/TheHackersNews' },
+            { name: 'Schneier on Security', url: 'https://www.schneier.com/feed/atom/' },
+            { name: 'Dark Reading', url: 'https://www.darkreading.com/rss.xml' },
+            { name: 'Kaspersky Securelist', url: 'http://www.securelist.com/en/rss/allupdates' },
+            { name: 'Mandiant Blog', url: 'https://www.mandiant.com/resources/blog/rss.xml' },
+            { name: 'Microsoft Security Blog', url: 'https://www.microsoft.com/en-us/security/blog/feed/' },
+            { name: 'Trend Micro Simply Security', url: 'http://feeds.trendmicro.com/TrendMicroSimplySecurity' },
+            { name: 'Recorded Future', url: 'https://www.recordedfuture.com/feed/' },
+            { name: 'The DFIR Report', url: 'https://thedfirreport.com/feed/' },
+            { name: 'Sophos News', url: 'https://news.sophos.com/en-us/feed' },
+            { name: 'Check Point Research', url: 'https://research.checkpoint.com/feed' },
+            { name: 'Cisco Talos', url: 'https://blog.talosintelligence.com/rss/' },
+            { name: 'CloudSEK Blog', url: 'https://www.cloudsek.com/blog/rss.xml' },
+            { name: 'Coveware Blog', url: 'https://www.coveware.com/blog?format=RSS' },
+            { name: 'ESET Blog', url: 'https://feeds.feedburner.com/eset/blog?format=xml' },
+            { name: 'Eye Security Blog', url: 'https://www.eye.security/blog/rss.xml' },
+            { name: 'Fox-IT Blog', url: 'http://blog.fox-it.com/feed/' },
+            { name: 'Google Project Zero', url: 'http://googleprojectzero.blogspot.com/feeds/posts/default' },
+            { name: 'Google Threat Analysis Group', url: 'https://blog.google/threat-analysis-group/rss' },
+            { name: 'Huntress Blog', url: 'https://www.huntress.com/blog/rss.xml' },
+            { name: 'DoublePulsar', url: 'https://doublepulsar.com/feed' },
+            { name: 'Proofpoint Threat Insight', url: 'https://www.proofpoint.com/us/threat-insight-blog.xml' },
+            { name: 'Rapid7 Detection and Response', url: 'https://blog.rapid7.com/tag/detection-and-response/rss/' },
+            { name: 'SentinelOne Labs', url: 'https://labs.sentinelone.com/feed/' },
+            { name: 'Unit42 (Palo Alto Networks)', url: 'http://feeds.feedburner.com/Unit42' },
+            { name: 'WatchTowr Labs', url: 'https://labs.watchtowr.com/rss/' },
+            { name: 'Wiz Blog', url: 'https://blog.wiz.io/rss/' },
+            { name: 'Zscaler Research', url: 'http://research.zscaler.com/feeds/posts/default' },
+            { name: 'Crowdstrike', url: 'https://www.crowdstrike.com/blog/feed' }
+        ];
+
+        // Categories for organizing the news
+        const categories = {
+            nationState: {
+                title: 'Nation State Actor Activity',
+                icon: '🌐',
+                items: []
+            },
+            financial: {
+                title: 'Financially Motivated Actor Activity',
+                icon: '💰',
+                items: []
+            },
+            breaches: {
+                title: 'Compromises and Data Breach Activity',
+                icon: '🔓',
+                items: []
+            },
+            vulnerabilities: {
+                title: 'Vulnerabilities Activity',
+                icon: '🔍',
+                items: []
+            },
+            other: {
+                title: 'Other Miscellaneous Activity',
+                icon: '📋',
+                items: []
+            }
+        };
+
+        // Keywords for categorization
+        const categoryKeywords = {
+            nationState: [
+                'apt', 'advanced persistent threat', 'nation state', 'state-sponsored', 'cyber espionage',
+                'china', 'russia', 'iran', 'north korea', 'apt28', 'apt29', 'lazarus', 'fancy bear',
+                'cozy bear', 'sandworm', 'turla', 'equation group', 'operation', 'cyber warfare'
+            ],
+            financial: [
+                'ransomware', 'extortion', 'cryptocurrency', 'cryptojacking', 'business email compromise',
+                'bec', 'financial fraud', 'banking trojan', 'phishing', 'malvertising', 'scam',
+                'blackcat', 'lockbit', 'conti', 'revil', 'cl0p', 'hive', 'alphv'
+            ],
+            breaches: [
+                'breach', 'hack', 'compromise', 'data leak', 'exposed', 'unauthorized access',
+                'incident', 'cyberattack', 'attack', 'intrusion', 'compromised', 'stolen data'
+            ],
+            vulnerabilities: [
+                'cve', 'vulnerability', 'exploit', 'zero-day', 'patch', 'security update',
+                'flaw', 'weakness', 'advisory', 'critical', 'rce', 'remote code execution'
+            ]
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDateTime();
+            fetchAllRSSFeeds();
+            
+            // Set up refresh button
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+                fetchAllRSSFeeds();
+            });
+
+            // Update date/time every minute
+            setInterval(updateDateTime, 60000);
+        });
+
+        // Update current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('date-time').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        // Fetch all RSS feeds
+        async function fetchAllRSSFeeds() {
+            try {
+                // Reset categories
+                Object.keys(categories).forEach(key => {
+                    categories[key].items = [];
+                });
+
+                // Initialize source status tracking
+                const sourceStatusContainer = document.getElementById('source-status');
+                sourceStatusContainer.innerHTML = '';
+                
+                // Create status elements for each source
+                const sourceStatusElements = {};
+                rssSources.forEach(source => {
+                    const statusElement = document.createElement('div');
+                    statusElement.className = 'source-item source-loading';
+                    statusElement.innerHTML = `<span class="source-status-icon">⏳</span>${source.name}`;
+                    sourceStatusContainer.appendChild(statusElement);
+                    sourceStatusElements[source.name] = statusElement;
+                });
+
+                // Update progress bar
+                const progressBar = document.getElementById('progress');
+                progressBar.style.width = '0%';
+                
+                // Try multiple CORS proxy services
+                const proxyServices = [
+                    'https://api.allorigins.win/raw?url=',
+                    'https://corsproxy.io/?',
+                    'https://api.codetabs.com/v1/proxy?quest='
+                ];
+                
+                let currentProxyIndex = 0;
+                let completedRequests = 0;
+                const totalRequests = rssSources.length;
+                
+                // Process each source
+                for (const source of rssSources) {
+                    let success = false;
+                    
+                    // Try each proxy service until one works
+                    for (let i = 0; i < proxyServices.length; i++) {
+                        try {
+                            await fetchRSSFeed(source, proxyServices[i]);
+                            success = true;
+                            
+                            // Update source status
+                            sourceStatusElements[source.name].className = 'source-item source-success';
+                            sourceStatusElements[source.name].innerHTML = `<span class="source-status-icon">✓</span>${source.name}`;
+                            
+                            break;
+                        } catch (error) {
+                            console.error(`Error with proxy ${i} for ${source.name}:`, error);
+                            // Try next proxy
+                        }
+                    }
+                    
+                    if (!success) {
+                        // All proxies failed for this source
+                        sourceStatusElements[source.name].className = 'source-item source-error';
+                        sourceStatusElements[source.name].innerHTML = `<span class="source-status-icon">✗</span>${source.name}`;
+                    }
+                    
+                    // Update progress
+                    completedRequests++;
+                    progressBar.style.width = `${(completedRequests / totalRequests) * 100}%`;
+                    
+                    // Small delay to avoid overwhelming the servers
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                // Process and categorize the news
+                processNewsItems();
+                
+                // Display the results
+                displayResults();
+                
+                // Hide loading and show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error fetching RSS feeds:', error);
+                showStatusMessage('Error fetching RSS feeds. Please try again later.', 'error');
+            }
+        }
+
+        // Fetch a single RSS feed
+        async function fetchRSSFeed(source, proxyUrl) {
+            const response = await fetch(proxyUrl + encodeURIComponent(source.url), {
+                signal: AbortSignal.timeout(10000) // 10 second timeout
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const xmlText = await response.text();
+            
+            // Check if we got valid XML
+            if (!xmlText || xmlText.includes('<html') || xmlText.includes('404') || xmlText.includes('Not Found')) {
+                throw new Error('Invalid RSS feed content');
+            }
+            
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            
+            // Check for parsing errors
+            const parserError = xmlDoc.querySelector('parsererror');
+            if (parserError) {
+                throw new Error('XML parsing error');
+            }
+            
+            // Extract items from the RSS feed
+            const items = xmlDoc.querySelectorAll('item, entry');
+            
+            if (items.length === 0) {
+                throw new Error('No items found in RSS feed');
+            }
+            
+            items.forEach(item => {
+                const title = getElementText(item, 'title');
+                const description = getElementText(item, 'description, summary, content');
+                const link = getElementText(item, 'link');
+                const pubDate = getElementText(item, 'pubDate, published, updated');
+                
+                if (title && link) {
+                    // Determine category based on keywords
+                    const category = categorizeItem(title, description);
+                    
+                    // Add to the appropriate category
+                    categories[category].items.push({
+                        title: cleanText(title),
+                        description: cleanText(description),
+                        link: link,
+                        source: source.name,
+                        pubDate: pubDate ? new Date(pubDate) : new Date()
+                    });
+                }
+            });
+        }
+
+        // Helper function to get text from an element
+        function getElementText(parent, selector) {
+            const selectors = selector.split(',');
+            for (const sel of selectors) {
+                const element = parent.querySelector(sel.trim());
+                if (element) return element.textContent.trim();
+            }
+            return '';
+        }
+
+        // Clean text by removing HTML tags and excessive whitespace
+        function cleanText(text) {
+            if (!text) return '';
+            return text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        // Categorize an item based on keywords
+        function categorizeItem(title, description) {
+            const text = (title + ' ' + description).toLowerCase();
+            
+            // Check for nation state keywords
+            if (categoryKeywords.nationState.some(keyword => text.includes(keyword))) {
+                return 'nationState';
+            }
+            
+            // Check for financial keywords
+            if (categoryKeywords.financial.some(keyword => text.includes(keyword))) {
+                return 'financial';
+            }
+            
+            // Check for breach keywords
+            if (categoryKeywords.breaches.some(keyword => text.includes(keyword))) {
+                return 'breaches';
+            }
+            
+            // Check for vulnerability keywords
+            if (categoryKeywords.vulnerabilities.some(keyword => text.includes(keyword))) {
+                return 'vulnerabilities';
+            }
+            
+            // Default to other
+            return 'other';
+        }
+
+        // Process news items to deduplicate and prioritize
+        function processNewsItems() {
+            Object.keys(categories).forEach(categoryKey => {
+                const category = categories[categoryKey];
+                
+                // Sort by publication date (newest first)
+                category.items.sort((a, b) => b.pubDate - a.pubDate);
+                
+                // Deduplicate similar items
+                const deduplicatedItems = [];
+                const seenTitles = new Set();
+                
+                category.items.forEach(item => {
+                    // Create a simplified version of the title for comparison
+                    const simplifiedTitle = item.title.toLowerCase()
+                        .replace(/[^\w\s]/g, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    
+                    // Check if we've seen a similar title
+                    let isDuplicate = false;
+                    for (const seenTitle of seenTitles) {
+                        if (calculateSimilarity(simplifiedTitle, seenTitle) > 0.7) {
+                            // This is a duplicate, add the source to the existing item
+                            const existingItem = deduplicatedItems.find(i => 
+                                calculateSimilarity(
+                                    i.title.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim(),
+                                    seenTitle
+                                ) > 0.7
+                            );
+                            
+                            if (existingItem) {
+                                if (!existingItem.sources) {
+                                    existingItem.sources = [{ name: existingItem.source, url: existingItem.link }];
+                                }
+                                existingItem.sources.push({ name: item.source, url: item.link });
+                            }
+                            
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isDuplicate) {
+                        seenTitles.add(simplifiedTitle);
+                        deduplicatedItems.push({
+                            ...item,
+                            sources: [{ name: item.source, url: item.link }]
+                        });
+                    }
+                });
+                
+                // Keep only the top items for each category
+                category.items = deduplicatedItems.slice(0, 10);
+            });
+        }
+
+        // Calculate similarity between two strings (0-1)
+        function calculateSimilarity(str1, str2) {
+            const longer = str1.length > str2.length ? str1 : str2;
+            const shorter = str1.length > str2.length ? str2 : str1;
+            
+            if (longer.length === 0) return 1.0;
+            
+            const editDistance = levenshteinDistance(longer, shorter);
+            return (longer.length - editDistance) / longer.length;
+        }
+
+        // Calculate Levenshtein distance between two strings
+        function levenshteinDistance(str1, str2) {
+            const matrix = [];
+            
+            for (let i = 0; i <= str2.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= str1.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= str2.length; i++) {
+                for (let j = 1; j <= str1.length; j++) {
+                    if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            
+            return matrix[str2.length][str1.length];
+        }
+
+        // Display the results
+        function displayResults() {
+            const contentElement = document.getElementById('content');
+            contentElement.innerHTML = '';
+            
+            // Check if we have any items
+            const hasItems = Object.values(categories).some(category => category.items.length > 0);
+            
+            if (!hasItems) {
+                showStatusMessage('No news items found. Please try again later.', 'error');
+                return;
+            }
+            
+            // Create sections for each category
+            Object.keys(categories).forEach(categoryKey => {
+                const category = categories[categoryKey];
+                
+                if (category.items.length === 0) return;
+                
+                const sectionElement = document.createElement('div');
+                sectionElement.className = 'section';
+                
+                // Create section header
+                const headerElement = document.createElement('div');
+                headerElement.className = 'section-header';
+                headerElement.innerHTML = `
+                    <span class="section-icon">${category.icon}</span>
+                    <h2 class="section-title">${category.title}</h2>
+                `;
+                sectionElement.appendChild(headerElement);
+                
+                // Create section content
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'section-content';
+                
+                // Add items to the section
+                category.items.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'item';
+                    
+                    // Create sources HTML
+                    const sourcesHtml = item.sources.map(source => 
+                        `<a href="${source.url}" target="_blank">${source.name}</a>`
+                    ).join(' ');
+                    
+                    itemElement.innerHTML = `
+                        <h3 class="item-title">${item.title}</h3>
+                        <p class="item-description">${item.description ? item.description.substring(0, 200) + '...' : ''}</p>
+                        <div class="item-sources">Sources: ${sourcesHtml}</div>
+                    `;
+                    
+                    contentDiv.appendChild(itemElement);
+                });
+                
+                sectionElement.appendChild(contentDiv);
+                contentElement.appendChild(sectionElement);
+            });
+        }
+
+        // Show a status message
+        function showStatusMessage(message, type) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = `status-message ${type}`;
+            statusElement.style.display = 'block';
+            
+            // Hide the message after 5 seconds
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
