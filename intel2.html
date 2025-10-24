@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Intel RSS News Reader</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 20px; }
+        h1 { text-align: center; color: #007bff; }
+        section { margin-bottom: 30px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #0056b3; }
+        ul { list-style-type: square; padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        #reader { max-width: 1200px; margin: 0 auto; }
+        .article { margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .loading { text-align: center; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div id="reader">
+        <h1>Threat Intel Daily Briefing - October 24, 2025</h1>
+        <p class="loading">Fetching latest articles from sources...</p>
+        <section id="nation-state">
+            <h2>Nation State Actor Activity</h2>
+            <ul>
+                <li>Russian state manages cybercrime groups for geopolitical aims. <a href="https://www.securityweek.com/russian-government-now-actively-managing-cybercrime-groups-security-firm/">SecurityWeek</a>, <a href="https://www.recordedfuture.com/research/dark-covenant-3-controlled-impunity-and-russias-cybercriminals">Recorded Future</a></li>
+                <li>Chinese APTs target servers, gov, defense with custom malware and backdoors. <a href="https://securelist.com/passiveneuron-campaign-with-apt-implants-and-cobalt-strike/117745/">Kaspersky</a>, <a href="https://research.checkpoint.com/2025/silver-fox-apt-vulnerable-drivers/">Checkpoint</a>, <a href="https://www.sentinelone.com/labs/follow-the-smoke-china-nexus-threat-actors-hammer-at-the-doors-of-top-tier-targets/">SentinelOne</a>, <a href="https://cloud.google.com/blog/topics/threat-intelligence/brickstorm-espionage-campaign/">Mandiant</a>, <a href="https://www.huntress.com/blog/nezha-china-nexus-threat-actor-tool">Huntress</a></li>
+                <li>North Korean groups use EtherHiding and BeaverTail for crypto theft and espionage. <a href="https://cloud.google.com/blog/topics/threat-intelligence/dprk-adopts-etherhiding/">Mandiant</a>, <a href="https://blog.talosintelligence.com/beavertail-and-ottercookie-evolve-with-a-new-javascript-module/">Talos</a>, <a href="https://www.sentinelone.com/labs/">SentinelOne</a></li>
+                <li>Iranian APT35 and MuddyWater target with RATs and BugSleep. <a href="https://www.cloudsek.com/blog/an-insider-look-at-the-irgc-linked-apt35-operations-ep3---malware-arsenal-tooling">CloudSEK</a>, <a href="https://research.checkpoint.com/2025/22nd-september-threat-intelligence-report/">Checkpoint</a></li>
+                <li>Russian COLDRIVER deploys new malware; pro-Russia info ops. <a href="https://cloud.google.com/blog/topics/threat-intelligence/new-malware-russia-coldriver/">Mandiant</a></li>
+                <li>F5 breached by nation-state, source code stolen. <a href="https://www.schneier.com/?p=71041">Schneier</a>, <a href="https://news.sophos.com/en-us/2025/10/15/f5-network-compromised/">Sophos</a>, <a href="https://research.checkpoint.com/2025/20th-october-threat-intelligence-report/">Checkpoint</a></li>
+            </ul>
+        </section>
+        <section id="financially-motivated">
+            <h2>Financially Motivated Actor Activity</h2>
+            <ul>
+                <li>Vietnamese UNC6229 uses fake jobs for malware in marketing. <a href="https://cloud.google.com/blog/topics/threat-intelligence/vietnamese-actors-fake-job-posting-campaigns/">Mandiant</a></li>
+                <li>UNC5142 EtherHiding delivers infostealers like VIDAR. <a href="https://cloud.google.com/blog/topics/threat-intelligence/unc5142-etherhiding-distribute-malware/">Mandiant</a></li>
+                <li>TA585 deploys MonsterV2 RAT and stealer. <a href="https://www.proofpoint.com/us/blog/threat-insight/when-monster-bytes-tracking-ta585-and-its-arsenal">Proofpoint</a></li>
+                <li>Maverick Trojan targets Brazilian banks via WhatsApp. <a href="https://securelist.com/maverick-banker-distributing-via-whatsapp/117715/">Kaspersky</a></li>
+                <li>AdaptixC2 in npm for cross-platform exploitation. <a href="https://securelist.com/adaptixc2-agent-found-in-an-npm-package/117784/">Kaspersky</a></li>
+                <li>PXA Stealer exfiltrates to Telegram. <a href="https://www.sentinelone.com/labs/ghost-in-the-zip-new-pxa-stealer-and-its-telegram-powered-ecosystem/">SentinelOne</a></li>
+                <li>Rhadamanthys and Lumma via YouTube network. <a href="https://research.checkpoint.com/2025/youtube-ghost-network/">Checkpoint</a></li>
+                <li>Stealerium and Phantom in campaigns. <a href="https://www.proofpoint.com/us/blog/threat-insight/not-safe-work-tracking-and-investigating-stealerium-and-phantom-infostealers">Proofpoint</a></li>
+                <li>UNC6040 vishing for Salesforce extortion. <a href="https://cloud.google.com/blog/topics/threat-intelligence/unc6040-proactive-hardening-recommendations/">Mandiant</a></li>
+            </ul>
+        </section>
+        <section id="compromises">
+            <h2>Compromises and Data Breach Activity</h2>
+            <ul>
+                <li>Victims: Toys ‘R’ Us Canada, F5, Red Hat, WestJet, Avnet, DraftKings, Farmers Insurance, Auchan, Stellantis, Volvo Group, Lotte Card, Gucci, European airports, Asahi Group, Sugar Land city, Williams & Connolly, Harvard University, Envoy Air, Qantas, MANGO, Nissan, Creative Box Inc. <a href="https://www.securityweek.com/toys-r-us-canada-customer-information-leaked-online/">SecurityWeek</a>, <a href="https://research.checkpoint.com/2025/13th-october-threat-intelligence-report/">Checkpoint</a>, <a href="https://doublepulsar.com/red-hat-consulting-breach-puts-over-5000-high-profile-enterprise-customers-at-risk-in-detail-90114f18f706">DoublePulsar</a></li>
+            </ul>
+        </section>
+        <section id="vulnerabilities">
+            <h2>Vulnerabilities Activity</h2>
+            <ul>
+                <li>Oracle EBS CVE-2025-61882 zero-day exploited by Cl0p. <a href="https://cloud.google.com/blog/topics/threat-intelligence/oracle-ebusiness-suite-zero-day-exploitation/">Mandiant</a>, <a href="https://research.checkpoint.com/2025/20th-october-threat-intelligence-report/">Checkpoint</a></li>
+                <li>Sitecore CVE-2025-53690 RCE exploited. <a href="https://cloud.google.com/blog/topics/threat-intelligence/viewstate-deserialization-zero-day-vulnerability/">Mandiant</a></li>
+                <li>Gladinet/Triofox LFI actively exploited. <a href="https://www.huntress.com/blog/gladinet-centrestack-triofox-local-file-inclusion-flaw">Huntress</a></li>
+                <li>VSCode extensions secrets leak, supply chain risk. <a href="https://www.wiz.io/blog/supply-chain-risk-in-vscode-extension-marketplaces">Wiz</a></li>
+                <li>Microsoft October Patch Tuesday record CVEs for RCE/EoP. <a href="https://news.sophos.com/en-us/2025/10/15/october-patch-tuesday-beats-january-25-record/">Sophos</a></li>
+                <li>Windows GDI DoS via EMF+. <a href="https://research.checkpoint.com/2025/denial-of-fuzzing-rust-in-the-windows-kernel/">Checkpoint</a></li>
+                <li>WhatsApp CVE-2025-55177 zero-click. <a href="https://research.checkpoint.com/2025/1st-september-threat-intelligence-report/">Checkpoint</a></li>
+                <li>Citrix NetScaler CVE-2025-7775 RCE. <a href="https://research.checkpoint.com/2025/1st-september-threat-intelligence-report/">Checkpoint</a></li>
+                <li>Cisco ASA zero-days. <a href="https://research.checkpoint.com/2025/29th-september-threat-intelligence-report/">Checkpoint</a></li>
+            </ul>
+        </section>
+        <section id="misc">
+            <h2>Other Miscellaneous Activity</h2>
+            <ul>
+                <li>Email phishing with QR codes, MFA evasion. <a href="https://securelist.com/email-phishing-techniques-2025/117801/">Kaspersky</a></li>
+                <li>Hacktivism uses hashtags for DDoS. <a href="https://securelist.com/dfi-meta-hacktivist-report/117708/">Kaspersky</a></li>
+                <li>SEO spam hidden links via injections. <a href="https://securelist.com/seo-spam-hidden-links/117782/">Kaspersky</a></li>
+                <li>PhantomCaptcha RAT in Ukraine spearphishing. <a href="https://www.sentinelone.com/labs/phantomcaptcha-multi-stage-websocket-rat-targets-ukraine-in-single-day-spearphishing-operation/">SentinelOne</a></li>
+                <li>FreeDrain crypto phishing network. <a href="https://www.sentinelone.com/labs/freedrain-unmasked-uncovering-an-industrial-scale-crypto-theft-network/">SentinelOne</a></li>
+                <li>Smart Contract scams drain ETH. <a href="https://www.sentinelone.com/labs/smart-contract-scams-ethereum-drainers-pose-as-trading-bots-to-steal-crypto/">SentinelOne</a></li>
+                <li>PDF Object Hashing for threat hunting. <a href="https://www.proofpoint.com/us/blog/threat-insight/proofpoint-releases-innovative-detections-threat-hunting-pdf-object-hashing">Proofpoint</a></li>
+                <li>OAuth apps for cloud persistence. <a href="https://www.proofpoint.com/us/blog/threat-insight/beyond-credentials-weaponizing-oauth-applications-persistent-cloud-access">Proofpoint</a></li>
+                <li>AI sidebar spoofing in ChatGPT. <a href="https://www.securityweek.com/ai-sidebar-spoofing-puts-chatgpt-atlas-perplexity-comet-and-other-browsers-at-risk/">SecurityWeek</a></li>
+                <li>Microsoft Gaming Copilot privacy leaks. <a href="https://doublepulsar.com/microsoft-builds-on-recall-with-gaming-copilot-fails-basic-privacy-tests-52988576bcc8">DoublePulsar</a></li>
+            </ul>
+        </section>
+    </div>
+
+    <script>
+        // Embedded JS for dynamic RSS fetching (using a CORS proxy)
+        const sources = [
+            'https://www.bleepingcomputer.com/feed/',
+            'http://feeds.feedburner.com/Securityweek',
+            'https://feeds.feedburner.com/TheHackersNews',
+            'https://www.schneier.com/feed/atom/',
+            'https://www.darkreading.com/rss.xml',
+            'http://www.securelist.com/en/rss/allupdates',
+            'https://www.mandiant.com/resources/blog/rss.xml',
+            'https://www.microsoft.com/en-us/security/blog/feed/',
+            'http://feeds.trendmicro.com/TrendMicroSimplySecurity',
+            'https://www.recordedfuture.com/feed/',
+            'https://thedfirreport.com/feed/',
+            'https://news.sophos.com/en-us/feed',
+            'https://research.checkpoint.com/feed',
+            'https://blog.talosintelligence.com/rss/',
+            'https://www.cloudsek.com/blog/rss.xml',
+            'https://www.coveware.com/blog?format=RSS',
+            'https://feeds.feedburner.com/eset/blog?format=xml',
+            'https://www.eye.security/blog/rss.xml',
+            'http://blog.fox-it.com/feed/',
+            'http://googleprojectzero.blogspot.com/feeds/posts/default',
+            'https://blog.google/threat-analysis-group/rss',
+            'https://www.huntress.com/blog/rss.xml',
+            'https://doublepulsar.com/feed',
+            'https://www.proofpoint.com/us/threat-insight-blog.xml',
+            'https://blog.rapid7.com/tag/detection-and-response/rss/',
+            'https://labs.sentinelone.com/feed/',
+            'http://feeds.feedburner.com/Unit42',
+            'https://labs.watchtowr.com/rss/',
+            'https://blog.wiz.io/rss/',
+            'http://research.zscaler.com/feeds/posts/default',
+            'https://www.crowdstrike.com/blog/feed'
+        ];
+
+        const proxy = 'https://api.allorigins.win/raw?url=';
+
+        async function fetchRSS(url) {
+            try {
+                const response = await fetch(proxy + encodeURIComponent(url));
+                const text = await response.text();
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, 'application/xml');
+                const items = xml.querySelectorAll('item, entry');
+                return Array.from(items).map(item => ({
+                    title: item.querySelector('title')?.textContent || 'No Title',
+                    link: item.querySelector('link')?.textContent || item.querySelector('link')?.getAttribute('href') || 'No Link',
+                    description: item.querySelector('description, summary')?.textContent || 'No Description'
+                }));
+            } catch (error) {
+                console.error('Error fetching ' + url + ': ' + error);
+                return [];
+            }
+        }
+
+        async function loadArticles() {
+            const loading = document.querySelector('.loading');
+            loading.textContent = 'Loading articles...';
+            let allArticles = [];
+            for (const url of sources) {
+                const articles = await fetchRSS(url);
+                allArticles = allArticles.concat(articles);
+            }
+            loading.style.display = 'none';
+            const miscSection = document.getElementById('misc');
+            const ul = miscSection.querySelector('ul');
+            allArticles.forEach(article => {
+                const li = document.createElement('li');
+                li.innerHTML = `${article.title} <a href="${article.link}">Link</a> - ${article.description.substring(0, 100)}...`;
+                ul.appendChild(li);
+            });
+        }
+
+        loadArticles();
+    </script>
+</body>
+</html>
