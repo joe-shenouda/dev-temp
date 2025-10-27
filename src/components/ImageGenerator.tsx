@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Image as ImageIcon } from "lucide-react";
+import ImageModal from "@/components/ImageModal";
 
 interface ImageGeneratorProps {
   apiKey: string;
@@ -335,12 +336,13 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ apiKey }) => {
           {images.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {images.map((image, index) => (
-                <div key={index} className="border rounded-lg overflow-hidden">
+                <div key={index} className="border rounded-lg overflow-hidden relative group">
                   <img 
                     src={`data:image/${format};base64,${image}`} 
                     alt={`Generated image ${index + 1}`}
                     className="w-full h-auto object-contain"
                   />
+                  <ImageModal src={image} alt={`Generated image ${index + 1}`} format={format} />
                 </div>
               ))}
             </div>
