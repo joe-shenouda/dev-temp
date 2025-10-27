@@ -27,7 +27,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ apiKey }) => {
   const [seed, setSeed] = useState(0);
   const [variants, setVariants] = useState(1);
   const [format, setFormat] = useState("webp");
-  const [stylePreset, setStylePreset] = useState("");
+  const [stylePreset, setStylePreset] = useState("none");
   const [safeMode, setSafeMode] = useState(true);
   const [hideWatermark, setHideWatermark] = useState(false);
   const [embedExifMetadata, setEmbedExifMetadata] = useState(false);
@@ -50,29 +50,35 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ apiKey }) => {
     setImages([]);
 
     try {
+      const requestBody: any = {
+        prompt,
+        negative_prompt: negativePrompt,
+        model,
+        width,
+        height,
+        steps,
+        cfg_scale: cfgScale,
+        seed: seed || undefined,
+        variants,
+        format,
+        safe_mode: safeMode,
+        hide_watermark: hideWatermark,
+        embed_exif_metadata: embedExifMetadata,
+        lora_strength: loraStrength,
+      };
+
+      // Only add style_preset if it's not "none"
+      if (stylePreset !== "none") {
+        requestBody.style_preset = stylePreset;
+      }
+
       const response = await fetch("https://api.venice.ai/api/v1/image/generate", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          prompt,
-          negative_prompt: negativePrompt,
-          model,
-          width,
-          height,
-          steps,
-          cfg_scale: cfgScale,
-          seed: seed || undefined,
-          variants,
-          format,
-          style_preset: stylePreset || undefined,
-          safe_mode: safeMode,
-          hide_watermark: hideWatermark,
-          embed_exif_metadata: embedExifMetadata,
-          lora_strength: loraStrength,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -156,7 +162,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ apiKey }) => {
                     <SelectValue placeholder="Select style" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     <SelectItem value="3D Model">3D Model</SelectItem>
                     <SelectItem value="Analog Film">Analog Film</SelectItem>
                     <SelectItem value="Anime">Anime</SelectItem>
