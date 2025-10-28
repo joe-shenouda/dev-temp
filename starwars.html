@@ -1,0 +1,390 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Wars API Explorer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/petite-vue" defer init></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6, .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+    [v-cloak] {
+      display: none;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body class="bg-black text-gray-200" v-scope="App()" @vue:mounted="mounted" v-cloak>
+  
+  <div id="starfield" class="fixed top-0 left-0 w-full h-full -z-10"></div>
+
+  <div class="relative min-h-screen p-4 sm:p-6 lg:p-8 z-10">
+    <header class="flex items-center justify-between mb-8 h-12">
+      <div class="w-28">
+        <button v-if="viewStack.length > 1" @click="goBack" class="flex items-center gap-2 px-4 py-2 bg-cyan-600/50 text-white rounded-md hover:bg-cyan-500/60 transition-colors">
+            <span v-html="icons.chevronLeft"></span> Back
+        </button>
+      </div>
+
+      <h1 class="text-xl sm:text-2xl font-orbitron text-yellow-400 text-center tracking-wider">{{ headerTitle }}</h1>
+
+      <div class="flex justify-end w-28">
+         <label title="Wookiee Mode" for="wookiee-toggle" class="flex items-center cursor-pointer gap-2 text-gray-400 hover:text-white transition-colors">
+            <span v-html="icons.wookiee" :class="wookieeMode ? 'text-yellow-400' : ''"></span>
+            <div class="relative">
+                <input id="wookiee-toggle" type="checkbox" class="sr-only" v-model="wookieeMode" @change="onWookieeModeChange">
+                <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform" :class="{ 'transform translate-x-4 bg-yellow-400': wookieeMode }"></div>
+            </div>
+        </label>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto">
+        <div v-if="loading" class="flex justify-center items-center h-full">
+            <div class="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-yellow-400"></div>
+        </div>
+
+        <div v-if="error" class="text-center p-8 bg-red-900/50 rounded-lg border border-red-500">
+            <h2 class="text-2xl font-bold text-red-400">Error</h2>
+            <p class="mt-2 text-red-300">{{ error }}</p>
+        </div>
+
+        <div v-if="!loading && !error">
+            <!-- HOME VIEW -->
+            <div v-if="currentView.type === 'home'" class="text-center">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl text-yellow-400 font-orbitron mb-2 tracking-widest">SWAPI EXPLORER</h1>
+                <p class="text-lg text-cyan-300 mb-12">May the data be with you</p>
+                <div v-if="rootData" class="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
+                    <button v-for="(url, key) in rootData" @click="navigate({ type: 'list', url, resourceType: key })" class="p-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/20 hover:border-yellow-400/50 hover:bg-gray-800/60 transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-cyan-500/10">
+                        <span class="text-xl sm:text-2xl font-bold text-yellow-400 capitalize font-orbitron">{{ key }}</span>
+                    </button>
+                    <button @click="navigate({ type: 'api_info' })" class="col-span-2 sm:col-span-1 sm:col-start-2 p-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/20 hover:border-yellow-400/50 hover:bg-gray-800/60 transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2">
+                        <span class="text-yellow-400" v-html="icons.infoCircle"></span>
+                        <span class="text-xl sm:text-2xl font-bold text-yellow-400 capitalize font-orbitron">API Archives</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- LIST VIEW -->
+            <div v-if="currentView.type === 'list' && listData">
+                <div class="flex flex-wrap gap-4 items-center justify-between mb-8">
+                    <div class="relative flex-grow">
+                        <input type="text" :placeholder="'Search ' + currentView.resourceType + '...'" v-model="searchTerm" @input="onSearchInput" class="w-full bg-gray-900/50 border-2 border-cyan-400/30 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"/>
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" v-html="icons.search"></span>
+                    </div>
+                    <button @click="navigate({ type: 'schema', resourceType: currentView.resourceType })" class="px-4 py-3 bg-cyan-600/50 text-white rounded-full hover:bg-cyan-500/60 transition-colors font-semibold">
+                        View Schema
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <button v-for="item in listData.results" :key="item.url" @click="navigate({ type: 'detail', url: item.url })" class="text-left p-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/20 hover:border-yellow-400/50 hover:bg-gray-800/60 transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-cyan-500/10">
+                        <h3 class="text-xl font-bold text-yellow-400 truncate">{{ getCardTitle(item) }}</h3>
+                        <p class="text-gray-400 mt-1">{{ getCardSubtitle(item) }}</p>
+                    </button>
+                </div>
+
+                <div class="flex justify-between items-center mt-8">
+                    <button @click="navigate({ type: 'list', url: listData.previous, resourceType: currentView.resourceType })" :disabled="!listData.previous" class="flex items-center gap-2 px-4 py-2 bg-cyan-600/50 text-white rounded-md hover:bg-cyan-500/60 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors">
+                        <span v-html="icons.chevronLeft"></span> Previous
+                    </button>
+                    <button @click="navigate({ type: 'list', url: listData.next, resourceType: currentView.resourceType })" :disabled="!listData.next" class="flex items-center gap-2 px-4 py-2 bg-cyan-600/50 text-white rounded-md hover:bg-cyan-500/60 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors">
+                        Next <span v-html="icons.chevronRight"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- DETAIL VIEW -->
+            <div v-if="currentView.type === 'detail' && detailData" class="bg-gray-900/50 backdrop-blur-sm p-6 sm:p-8 rounded-lg border border-cyan-400/20 shadow-lg shadow-cyan-500/10">
+                 <h2 class="text-3xl sm:text-4xl font-bold text-yellow-400 mb-6">{{ detailName }}</h2>
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-lg">
+                    <div v-for="([key, value]) in detailFields">
+                        <p class="font-bold text-cyan-400 capitalize">{{ key.replace(/_/g, ' ') }}:</p>
+                        <div class="text-gray-300 mt-1 break-words">
+                            <ul v-if="Array.isArray(value)" class="list-disc list-inside">
+                                <li v-for="item in value">
+                                    <span v-if="isUrl(item)">
+                                        <button @click="navigate({ type: 'detail', url: item })" class="text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">
+                                            {{ resolvedNames[item] || 'Loading...' }}
+                                        </button>
+                                    </span>
+                                    <span v-else>{{ item }}</span>
+                                </li>
+                            </ul>
+                            <span v-else-if="isUrl(value)">
+                                <button @click="navigate({ type: 'detail', url: value })" class="text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">
+                                    {{ resolvedNames[value] || 'Loading...' }}
+                                </button>
+                            </span>
+                            <p v-else>{{ value }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCHEMA VIEW -->
+            <div v-if="currentView.type === 'schema' && schemaData" class="bg-gray-900/50 backdrop-blur-sm p-6 sm:p-8 rounded-lg border border-cyan-400/20 shadow-lg shadow-cyan-500/10">
+                <h2 class="text-3xl sm:text-4xl font-bold text-yellow-400 mb-6 font-orbitron capitalize">{{ currentView.resourceType }} Schema</h2>
+                <pre class="bg-black/50 p-4 rounded-md text-left text-sm overflow-x-auto"><code v-html="highlightedSchema"></code></pre>
+            </div>
+            
+            <!-- API INFO VIEW -->
+            <div v-if="currentView.type === 'api_info'" class="bg-gray-900/50 backdrop-blur-sm p-6 sm:p-8 rounded-lg border border-cyan-400/20 shadow-lg shadow-cyan-500/10">
+                <h2 class="text-3xl sm:text-4xl font-bold text-yellow-400 mb-6 font-orbitron">API Archives</h2>
+                <div class="prose prose-invert max-w-none text-gray-300 space-y-8">
+                    <div>
+                        <h3 class="text-2xl font-bold text-yellow-400 mb-3 font-orbitron">Introduction</h3>
+                        <p>Welcome to the swapi, the Star Wars API! This documentation should help you familiarise yourself with the resources available and how to consume them with HTTP requests.</p>
+                    </div>
+                     <div>
+                        <h3 class="text-2xl font-bold text-yellow-400 mb-3 font-orbitron">API Details</h3>
+                        <p><strong>Base URL:</strong> The root URL for all API requests is <code class="bg-gray-800 text-yellow-300 px-2 py-1 rounded">https://swapi.dev/api/</code></p>
+                        <p><strong>Rate Limiting:</strong> The API is limited to 10,000 requests per IP address per day to prevent abuse. This should be more than enough for any application.</p>
+                        <p><strong>Authentication:</strong> Swapi is a completely open API. No authentication is required to query and get data.</p>
+                    </div>
+                     <div>
+                        <h3 class="text-2xl font-bold text-yellow-400 mb-3 font-orbitron">Encodings</h3>
+                        <p><strong>JSON:</strong> This is the standard data format provided by default.</p>
+                        <p><strong>Wookiee:</strong> For our tall, hairy allies. This encoding is identical to JSON but with Wookiee translations. Use the toggle in the header to try it out! Appending <code class="bg-gray-800 text-yellow-300 px-2 py-1 rounded">?format=wookiee</code> to a URL enables it.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-yellow-400 mb-3 font-orbitron">Helper Libraries</h3>
+                        <p>A variety of helper libraries are available for consuming the API in different languages:</p>
+                        <ul class="list-disc list-inside grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <li>Python: swapi-python</li>
+                            <li>Javascript: SWAPI-Wrapper, swapi-node</li>
+                            <li>Typescript: swapi-ts</li>
+                            <li>Android: SWAPI-Android-SDK</li>
+                            <li>Java: SWAPI</li>
+                            <li>Go: swapi-go, swapi</li>
+                            <li>PHP: Coruscant, swapi-php</li>
+                            <li>Ruby: swapi-ruby, Tatooine, swgem</li>
+                            <li>C Sharp: SharpTrooper, SWapiCSharp</li>
+                            <li>And many more...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+  </div>
+
+<script>
+function App() {
+  // --- STATE ---
+  return {
+    viewStack: [{ type: 'home' }],
+    wookieeMode: false,
+    loading: true,
+    error: null,
+    rootData: null,
+    listData: null,
+    detailData: null,
+    schemaData: null,
+    resolvedNames: {},
+    searchTerm: '',
+    searchTimeout: null,
+    
+    // --- ICONS ---
+    icons: {
+        chevronLeft: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>`,
+        chevronRight: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>`,
+        search: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>`,
+        wookiee: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 transition-colors"><path d="M4 8V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" /><path d="M4 18v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /><path d="M10 8h4" /><path d="M10 13h4" /><path d="M10 18h4" /><path d="M7 8v8" /><path d="M17 8v8" /></svg>`,
+        infoCircle: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-7 w-7"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>`,
+    },
+
+    // --- COMPUTED PROPERTIES ---
+    get currentView() { return this.viewStack[this.viewStack.length - 1]; },
+    get headerTitle() {
+        switch (this.currentView.type) {
+            case 'home': return 'Star Wars API Explorer';
+            case 'list': return this.currentView.resourceType.toUpperCase();
+            case 'schema': return `${this.currentView.resourceType.toUpperCase()} SCHEMA`;
+            case 'api_info': return 'API ARCHIVES';
+            default: return 'Details';
+        }
+    },
+    get detailName() {
+        if (!this.detailData) return '';
+        return this.wookieeMode ? (this.detailData['whrascwo'] || this.detailData['aoahaoanwo']) : (this.detailData.name || this.detailData.title);
+    },
+    get detailFields() {
+        if (!this.detailData) return [];
+        const baseExclude = ['url', 'created', 'edited'];
+        const wookieeNameKeys = ['whrascwo', 'aoahaoanwo'];
+        const wookieeExclude = ['wwhman', 'oarcraohan', 'worowo_oarcraohan'];
+        const exclude = this.wookieeMode 
+            ? [...baseExclude, ...wookieeNameKeys, ...wookieeExclude]
+            : [...baseExclude, 'name', 'title'];
+        return Object.entries(this.detailData).filter(([key]) => !exclude.includes(key));
+    },
+    get highlightedSchema() {
+        if (!this.schemaData) return '';
+        return this.syntaxHighlight(JSON.stringify(this.schemaData, null, 2));
+    },
+
+    // --- METHODS ---
+    async swapiGet(url, options) {
+        const cache = new Map();
+        let finalUrl = url;
+        if (options?.wookiee) {
+            finalUrl = url.includes('?') ? `${url}&format=wookiee` : `${url}?format=wookiee`;
+        }
+        if (cache.has(finalUrl)) return cache.get(finalUrl);
+        
+        const response = await fetch(finalUrl);
+        if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+        const data = await response.json();
+        cache.set(finalUrl, data);
+        return data;
+    },
+    
+    async updateView() {
+        this.loading = true;
+        this.error = null;
+        try {
+            switch (this.currentView.type) {
+                case 'home':
+                    this.rootData = await this.swapiGet('https://swapi.dev/api/');
+                    break;
+                case 'list':
+                    const listUrl = this.searchTerm ? `https://swapi.dev/api/${this.currentView.resourceType}/?search=${this.searchTerm}` : this.currentView.url;
+                    this.listData = await this.swapiGet(listUrl, { wookiee: this.wookieeMode });
+                    break;
+                case 'detail':
+                    this.detailData = await this.swapiGet(this.currentView.url, { wookiee: this.wookieeMode });
+                    this.resolveLinkedNames(this.detailData);
+                    break;
+                case 'schema':
+                    this.schemaData = await this.swapiGet(`https://swapi.dev/api/${this.currentView.resourceType}/schema/`);
+                    break;
+            }
+        } catch (e) {
+            this.error = e.message || "Failed to fetch data.";
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    navigate(view) {
+        this.viewStack.push(view);
+        this.searchTerm = '';
+        this.updateView();
+    },
+    goBack() {
+        if (this.viewStack.length > 1) {
+            this.viewStack.pop();
+            this.searchTerm = '';
+            this.updateView();
+        }
+    },
+
+    onWookieeModeChange() {
+        this.resolvedNames = {}; // Clear resolved names on language change
+        this.updateView();
+    },
+
+    onSearchInput() {
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+            if (this.currentView.type === 'list') {
+                this.updateView();
+            }
+        }, 300);
+    },
+
+    getCardTitle(item) {
+        return this.wookieeMode ? (item['whrascwo'] || item['aoahaoanwo']) : (item.name || item.title || 'Unknown');
+    },
+    getCardSubtitle(item) {
+        if (this.wookieeMode) return item['oaoowhca-whahc'] || item['oaoowhca-oaanracc'] || '...';
+        if (item.gender) return `Gender: ${item.gender}`;
+        if (item.episode_id) return `Episode ${item.episode_id}`;
+        if (item.starship_class) return `Class: ${item.starship_class}`;
+        if (item.vehicle_class) return `Class: ${item.vehicle_class}`;
+        if (item.classification) return `Classification: ${item.classification}`;
+        if (item.climate) return `Climate: ${item.climate}`;
+        return '';
+    },
+
+    isUrl(value) {
+        return typeof value === 'string' && value.startsWith('http');
+    },
+    async resolveLinkedNames(data) {
+        const urlsToFetch = new Set();
+        Object.values(data).forEach(value => {
+            if (Array.isArray(value)) {
+                value.forEach(item => { if (this.isUrl(item)) urlsToFetch.add(item); });
+            } else if (this.isUrl(value)) {
+                urlsToFetch.add(value);
+            }
+        });
+
+        urlsToFetch.forEach(async (url) => {
+            if (this.resolvedNames[url]) return;
+            try {
+                const resource = await this.swapiGet(url, { wookiee: this.wookieeMode });
+                this.resolvedNames[url] = this.getCardTitle(resource);
+            } catch {
+                this.resolvedNames[url] = "Unknown";
+            }
+        });
+    },
+
+    syntaxHighlight(json) {
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+            let cls = 'text-green-400'; // number
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) cls = 'text-cyan-400'; // key
+                else cls = 'text-yellow-400'; // string
+            } else if (/true|false/.test(match)) {
+                cls = 'text-purple-400'; // boolean
+            } else if (/null/.test(match)) {
+                cls = 'text-gray-500'; // null
+            }
+            return `<span class="${cls}">${match}</span>`;
+        });
+    },
+
+    // --- LIFECYCLE ---
+    mounted() {
+        this.updateView();
+        
+        // Setup Starfield
+        const starfield = document.getElementById('starfield');
+        for (let i = 0; i < 150; i++) {
+            const star = document.createElement('div');
+            const size = Math.random() * 2 + 1;
+            star.className = "absolute rounded-full bg-white/80";
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.animation = `twinkle ${Math.random() * 3 + 2}s linear ${Math.random() * 5}s infinite`;
+            star.style.boxShadow = '0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0ff';
+            starfield.appendChild(star);
+        }
+    }
+  }
+}
+</script>
+
+</body>
+</html>
